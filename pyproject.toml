@@ -1,0 +1,120 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slotflow"
+version = "0.2.0"
+description = "Declarative slot-based onboarding schemas for LLM-driven conversations."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+keywords = [
+    "llm",
+    "onboarding",
+    "conversational",
+    "pydantic",
+    "extraction",
+    "slot-filling",
+    "chatbot",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pydantic>=2,<3",
+]
+
+[project.optional-dependencies]
+# LangChain backend — wraps any BaseChatModel
+langchain = [
+    "langchain-core>=0.3",
+    "langchain-openai>=0.3",
+]
+# OpenAI backend — uses openai.AsyncOpenAI directly (no LangChain)
+openai = [
+    "openai>=1.50",
+]
+# Convenience alias that installs the LangChain backend
+llm = [
+    "slotflow[langchain]",
+]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5",
+    "python-dotenv>=1.0",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "slotflow[langchain]",
+]
+
+[tool.setuptools.packages.find]
+include = ["slotflow*"]
+exclude = ["tests*", "examples*"]
+
+[tool.setuptools.package-data]
+slotflow = ["py.typed"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["tests"]
+addopts = "-ra"
+
+[tool.coverage.run]
+source = ["slotflow"]
+omit = ["tests/*", "examples/*", "main.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line length handled by formatter; long prompt strings unavoidable
+    "B008",  # function calls in argument defaults (Slot() returns FieldInfo; this is the pattern)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+"examples/*" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.10"
+files = ["slotflow"]
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = false  # LLM ainvoke returns Any; we validate downstream

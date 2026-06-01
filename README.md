@@ -1,28 +1,26 @@
-# conversational_onboarding_library
+# slotflow
 
-Declarative slot-based onboarding schemas for LLM-driven conversations.
-
-Describe **what** to capture as a Pydantic schema, declare **how** to ask
-(sequential, freeform, grouped in steps), and let the library drive the
-conversation turn by turn with any LangChain-compatible LLM.
+Drive multi-turn LLM conversations from a Pydantic schema. Declare what to collect with `Slot()`, choose a flow mode (sequential, freeform, steps), and let slotflow handle question generation, extraction, response judging, and follow-ups — with immutable state that serializes to Redis out of the box.
 
 - Composition over modification — slots do not know about flows
 - Pydantic does all validation, including dynamic per-call wrapper models
 - Immutable state — every turn returns a new `FlowState`
 - LLM is injected, never constructed internally (provider-agnostic)
-- The `pydantic` core install is LLM-free; the LangChain bits live in an
-  optional `[llm]` extra and are lazy-loaded
+- Core install is LLM-free; LangChain and OpenAI extras are optional
 
 ---
 
 ## Installation
 
 ```bash
-# Schemas only (no LLM dependency)
-pip install conversational_onboarding_library
+# Schema layer only (no LLM dependency)
+pip install slotflow
 
-# With the LLM runtime (extract / judge / runner)
-pip install "conversational_onboarding_library[llm]"
+# With LangChain backend
+pip install "slotflow[langchain]"
+
+# With OpenAI backend (no LangChain)
+pip install "slotflow[openai]"
 ```
 
 Requires Python 3.10+.
@@ -38,7 +36,7 @@ from datetime import date
 from enum import Enum
 from typing import Optional
 
-from conversational_onboarding_library import OnboardingSchema, Slot
+from slotflow import OnboardingSchema, Slot
 
 
 class DocumentType(str, Enum):
@@ -48,9 +46,9 @@ class DocumentType(str, Enum):
 
 
 class UserOnboarding(OnboardingSchema):
-    full_name: str = Slot(description="Nombre completo del usuario")
-    document_type: DocumentType = Slot(description="Tipo de documento")
-    birth_date: date = Slot(description="Fecha de nacimiento")
+    full_name: str = Slot(description="User's full name")
+    document_type: DocumentType = Slot(description="Type of identity document")
+    birth_date: date = Slot(description="Date of birth")
     phone: Optional[str] = Slot(default=None, description="Phone number (optional)")
 ```
 
@@ -61,7 +59,7 @@ Slots without a `default` are required; slots with one are optional.
 ```python
 import asyncio
 from langchain_openai import ChatOpenAI
-from conversational_onboarding_library import extract_slots
+from slotflow import extract_slots
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
@@ -83,7 +81,7 @@ feeding the Pydantic `ValidationError` back to the LLM as feedback.
 ```python
 import asyncio
 from langchain_openai import ChatOpenAI
-from conversational_onboarding_library import (
+from slotflow import (
     FlowMode, OnboardingFlow, SlotPrompt,
     initial_state, next_message, process_response,
 )
@@ -158,11 +156,8 @@ entirely — useful for tightly controlled wording or to save tokens.
 2. **Judge** — `judge_response` classifies the response as one of
    `COMPLETE / PARTIAL / INSUFFICIENT / SKIP_INTENT / REFUSED`, given the
    user's raw text *and* the extracted value.
-3. **Decide** — the runner either fills the slot, marks an optional slot as
-   skipped, asks a follow-up, or (for a required `REFUSED`) hands control
-   back to the caller without advancing.
-
-Extraction first, then judge — see `CLAUDE.md` for the reasoning.
+3. **Decide** — the runner fills the slot, marks an optional slot as skipped,
+   asks a follow-up, or generates a nudge for a refused required slot.
 
 ---
 
@@ -216,12 +211,8 @@ python3 -m venv .venv
 .venv/bin/pytest --cov
 ```
 
-See [`CLAUDE.md`](CLAUDE.md) for the full architecture notes and design
-decisions.
-
 ---
 
 ## License
 
-Not yet specified.
-# slotflow
+MIT — see [LICENSE](LICENSE).
