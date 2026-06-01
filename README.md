@@ -14,7 +14,7 @@ Drive multi-turn LLM conversations from a Pydantic schema. Declare what to colle
 
 ```bash
 # Schema layer only (no LLM dependency)
-pip install slotflow
+pip install llm-slotflow
 
 # With LangChain backend
 pip install "slotflow[langchain]"
